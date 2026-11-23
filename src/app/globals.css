@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #fbf6ee;
+  --color-card: #ffffff;
+  --color-ink: #2a2440;
+  --color-muted: #6f6886;
+  --color-line: #ebe3d6;
+  --color-dawn: #e9964a;
+  --color-dawn-soft: #fbe6d0;
+  --color-plum: #5f4b8b;
+  --color-plum-soft: #ece6f6;
+  --color-sage: #4f8a6b;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #15121d;
+    --color-card: #1f1a2b;
+    --color-ink: #f1ecf8;
+    --color-muted: #a59fb8;
+    --color-line: #2f2940;
+    --color-dawn: #f0a660;
+    --color-dawn-soft: #3a2a1f;
+    --color-plum: #b8a5e6;
+    --color-plum-soft: #2c2540;
+    --color-sage: #7cc39c;
+  }
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+}
+
+textarea {
+  field-sizing: content;
+}
+
+.sky {
+  background:
+    radial-gradient(120% 70% at 50% -10%, var(--color-dawn-soft) 0%, transparent 60%),
+    var(--color-paper);
+}
