@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useEntries, useNow } from "@/lib/useJournal";
 import { formatLong, partOfDay, todayKey, tomorrowKey } from "@/lib/dates";
 import { streak } from "@/lib/stats";
@@ -16,6 +17,7 @@ export default function Home() {
   const todays = entries.find((e) => e.date === today && e.text.trim());
   const count = streak(entries, today);
   const firstTime = ready && entries.length === 0;
+  const [reflectEarly, setReflectEarly] = useState(false);
 
   const greeting =
     part === "morning" ? "Good morning" : part === "day" ? "Good afternoon" : "Good evening";
@@ -37,8 +39,20 @@ export default function Home() {
     </section>
   );
 
-  // Daytime: show the reflection only once one exists; the evening view asks for it.
-  const reflect = todays && todays.reflection && <ReflectCard entry={todays} />;
+  // Daytime: the evening view asks for the reflection, but it can be added early.
+  const reflect =
+    todays &&
+    (todays.reflection || reflectEarly ? (
+      <ReflectCard entry={todays} />
+    ) : (
+      <button
+        type="button"
+        onClick={() => setReflectEarly(true)}
+        className="w-full rounded-xl border border-line bg-card py-3 text-sm font-medium text-ink"
+      >
+        Reflect on today now
+      </button>
+    ));
 
   return (
     <div className="space-y-8">
