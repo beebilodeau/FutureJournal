@@ -18,6 +18,24 @@ note how it actually went, then write the following day.
 - **Journal**: every entry by month, with streak, days written, and how many
   came true. Edit, reflect on, or delete any entry.
 - **Backup**: download or restore a JSON backup (How it works tab).
+
+## Added in v0.2
+
+- **Daily affirmation**: a card at the top of Write. Built-in lines, a line
+  pulled from what you wrote ("I was calm on the call" becomes "I am calm."),
+  and your own lines (kept on the device and in backups).
+- **Came-true check-off**: the reflection splits the day's entry into
+  sentences to tick. Ticks suggest the overall answer; the Journal shows how
+  often your written days come true.
+- **Streak**: a week row on Write ending with tomorrow, current and best
+  streak, and a month calendar on Journal.
+- **Speak**: a mic button on the entry box (Web Speech API; hidden where the
+  browser doesn't support it). Each pause becomes a sentence at the cursor.
+
+Preview deployments accept `?demo=1` to load sample entries when the browser
+has none (never on the live site). Anchors: `#affirmation`, `#streak`,
+`#came-true` (opens the check-off any time of day), `#write`, and
+`/journal/#calendar`.
 - **Installable PWA**: manifest, icons and a service worker so it works
   offline from the home screen.
 
@@ -68,4 +86,4 @@ accounts:
 ## Ideas for later
 
 Evening reminder notification, streak freezes, a "came true" highlight reel,
-voice dictation, weekly review, themes, and a paid tier (sync, insights).
+weekly review, themes, and a paid tier (sync, insights).

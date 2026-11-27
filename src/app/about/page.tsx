@@ -101,8 +101,10 @@ export default function AboutPage() {
       <section className="space-y-3">
         <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted">Your data</h2>
         <p className="px-1 text-sm text-muted">
-          Entries stay on this device, in this browser. Nothing is sent anywhere. Download a backup
-          now and then, especially before clearing your browser.
+          Entries stay on this device, in this browser. Your journal is never uploaded. The one
+          exception is the Speak button: while it’s on, your browser’s own speech service (Google’s,
+          in Chrome) turns what you say into text. Download a backup now and then, especially before
+          clearing your browser.
         </p>
         <div className="flex gap-2">
           <button onClick={exportJson} className="flex-1 rounded-xl bg-ink py-3 text-sm font-semibold text-paper">

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { store } from "@/lib/store";
 import { tenseHints } from "@/lib/tense";
 import { FEELINGS, SPARKS } from "@/lib/prompts";
+import { formatPhrase, useDictation } from "@/lib/useDictation";
 import type { Entry } from "@/lib/types";
 
 const PLACEHOLDER =
@@ -23,6 +24,33 @@ export function EntryEditor({
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const loaded = useRef(false);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const textRef = useRef(text);
+  textRef.current = text;
+  const insertAt = useRef(0);
+
+  // Voice: each spoken phrase lands where the cursor was when you tapped Speak.
+  const voice = useDictation((phrase) => {
+    const cur = textRef.current;
+    const pos = Math.min(insertAt.current, cur.length);
+    const piece = formatPhrase(cur.slice(0, pos), phrase);
+    if (!piece) return;
+    const next = cur.slice(0, pos) + piece + cur.slice(pos);
+    insertAt.current = pos + piece.length;
+    textRef.current = next;
+    setText(next);
+  });
+
+  function toggleVoice() {
+    if (voice.state === "listening") {
+      voice.stop();
+      return;
+    }
+    const el = ref.current;
+    const cur = textRef.current;
+    // Cursor if the box was used, else the end.
+    insertAt.current = el && document.activeElement === el ? (el.selectionStart ?? cur.length) : cur.length;
+    voice.start();
+  }
 
   // Load whatever is saved for this date.
   useEffect(() => {
@@ -100,12 +128,41 @@ export function EntryEditor({
           className="block min-h-40 w-full resize-none bg-transparent font-serif text-lg leading-relaxed text-ink placeholder:text-muted/60 focus:outline-none"
           aria-label="Journal entry"
         />
-        <div className="mt-2 flex items-center justify-between text-xs text-muted">
-          <span>{words > 0 ? `${words} words` : "Write it as if it already happened"}</span>
-          <span aria-live="polite">
+        {voice.state === "listening" && (
+          <p className="mt-1 min-h-6 font-serif text-lg italic leading-relaxed text-muted" aria-live="polite">
+            {voice.interim || "Listening…"}
+          </p>
+        )}
+        <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted">
+          {voice.supported ? (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault() /* keep the cursor where it is */}
+              onClick={toggleVoice}
+              aria-pressed={voice.state === "listening"}
+              className={`flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold active:scale-95 ${
+                voice.state === "listening" ? "animate-pulse bg-dawn text-paper" : "bg-plum-soft text-plum"
+              }`}
+            >
+              <MicIcon />
+              {voice.state === "listening" ? "Stop" : "Speak"}
+            </button>
+          ) : (
+            <span>{words > 0 ? `${words} words` : "Write it as if it already happened"}</span>
+          )}
+          <span className="text-right" aria-live="polite">
+            {voice.supported && words > 0 && <>{words} words · </>}
             {status === "saving" ? "Saving…" : status === "saved" ? "Saved on this device" : ""}
           </span>
         </div>
+        {voice.state === "blocked" && (
+          <p className="mt-2 text-xs text-muted">
+            The microphone is blocked for this site. Allow it in your browser’s site settings, then tap Speak again.
+          </p>
+        )}
+        {voice.state === "error" && (
+          <p className="mt-2 text-xs text-muted">Voice entry isn’t working right now. You can still type, or use your keyboard’s mic.</p>
+        )}
       </div>
 
       {hints.length > 0 && (
@@ -165,6 +222,16 @@ export function EntryEditor({
         </div>
       </section>
     </div>
+  );
+}
+
+function MicIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 10a7 7 0 0 0 14 0" />
+      <path d="M12 17v4" />
+    </svg>
   );
 }
 

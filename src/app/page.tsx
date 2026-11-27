@@ -111,7 +111,7 @@ export default function Home() {
         </>
       )}
 
-      <section className="space-y-3">
+      <section id="write" className="scroll-mt-4 space-y-3">
         <SectionTitle
           eyebrow={`Tomorrow · ${formatLong(tomorrow)}`}
           title="Write it like it already happened"
