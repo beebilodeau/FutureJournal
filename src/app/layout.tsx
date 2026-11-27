@@ -3,6 +3,7 @@ import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
 import { RegisterSW } from "@/components/RegisterSW";
+import { AppShell } from "@/components/AppShell";
 
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -30,13 +31,24 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="en" className={`${fraunces.variable} ${inter.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Inside the Android/iOS app, mark the page before it paints so the
+            loading cover (and lock) show from the first frame. No effect on the website. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var c=window.Capacitor;if(c&&c.isNativePlatform&&c.isNativePlatform())document.documentElement.classList.add('fj-app')}catch(e){}",
+          }}
+        />
+      </head>
       <body className="sky antialiased">
         <main className="mx-auto w-full max-w-xl px-4 pb-28 pt-[max(1.25rem,env(safe-area-inset-top))]">
           {children}
         </main>
         <BottomNav />
         <RegisterSW />
+        <AppShell />
       </body>
     </html>
   );

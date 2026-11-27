@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { store } from "@/lib/store";
+import { kv } from "@/lib/kv";
 import { tenseHints } from "@/lib/tense";
 import { FEELINGS, SPARKS } from "@/lib/prompts";
 import { formatPhrase, useDictation } from "@/lib/useDictation";
@@ -53,12 +54,21 @@ export function EntryEditor({
   }
 
   // Load whatever is saved for this date.
+  // (In the apps, wait for the phone's storage to load first.)
   useEffect(() => {
-    const existing = store.get(date);
-    setText(existing?.text ?? "");
-    setFeelings(existing?.feelings ?? []);
-    loaded.current = true;
-    setStatus(existing ? "saved" : "idle");
+    let live = true;
+    loaded.current = false;
+    kv.ready.then(() => {
+      if (!live) return;
+      const existing = store.get(date);
+      setText(existing?.text ?? "");
+      setFeelings(existing?.feelings ?? []);
+      loaded.current = true;
+      setStatus(existing ? "saved" : "idle");
+    });
+    return () => {
+      live = false;
+    };
   }, [date]);
 
   // Autosave, debounced.

@@ -1,5 +1,6 @@
 import { addDays, todayKey } from "./dates";
 import { store } from "./store";
+import { isNativeApp } from "./kv";
 import { splitSentences } from "./parts";
 import type { Entry, Outcome } from "./types";
 
@@ -67,7 +68,7 @@ export function maybeSeedDemo(): boolean {
   // Tidy the address either way, so a reload or a shared link stays clean.
   url.searchParams.delete("demo");
   window.history.replaceState(null, "", url.pathname + url.search + url.hash);
-  if (LIVE_HOSTS.includes(url.hostname)) return false;
+  if (LIVE_HOSTS.includes(url.hostname) || isNativeApp()) return false;
   if (store.all().length > 0) return false;
 
   const today = todayKey();

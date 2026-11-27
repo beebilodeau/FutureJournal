@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { affirmationStore, affirmationsFor, type AffirmationSource } from "@/lib/affirmations";
 import type { Entry } from "@/lib/types";
+import { kv } from "@/lib/kv";
 
 const SOURCE_LABEL: Record<AffirmationSource, string> = {
   words: "From what you wrote",
@@ -14,7 +15,7 @@ function useCustomAffirmations(): string[] {
   const [custom, setCustom] = useState<string[]>([]);
   useEffect(() => {
     const load = () => setCustom(affirmationStore.custom());
-    load();
+    kv.ready.then(load);
     window.addEventListener("futurejournal:change", load);
     window.addEventListener("storage", load);
     return () => {

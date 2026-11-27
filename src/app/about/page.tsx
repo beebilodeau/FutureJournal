@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { isEntry, store } from "@/lib/store";
-import { affirmationStore } from "@/lib/affirmations";
-import { toKey } from "@/lib/dates";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { restoreBackup, saveBackup } from "@/lib/backup";
+import { isNativeApp } from "@/lib/kv";
+import { AppSettings } from "@/components/AppSettings";
 
 const STEPS = [
   {
@@ -30,38 +31,26 @@ const TIPS = [
 export default function AboutPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => setInApp(isNativeApp()), []);
 
-  function exportJson() {
-    const data = JSON.stringify(
-      { app: "futurejournal", version: 1, entries: store.all(), affirmations: affirmationStore.custom() },
-      null,
-      2,
-    );
-    const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `futurejournal-${toKey(new Date())}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setMsg("Backup downloaded.");
+  async function exportJson() {
+    try {
+      const how = await saveBackup();
+      setMsg(how === "shared" ? "Backup ready. Save it somewhere safe, like Drive or Files." : "Backup downloaded.");
+    } catch {
+      setMsg("Backup not saved.");
+    }
   }
 
   async function importJson(file: File) {
     try {
-      const parsed = JSON.parse(await file.text());
-      const list: unknown[] = Array.isArray(parsed) ? parsed : parsed?.entries;
-      if (!Array.isArray(list)) throw new Error("No entries found");
-      const valid = list.filter(isEntry);
-      const merged = new Map(store.all().map((e) => [e.date, e]));
-      for (const e of valid) merged.set(e.date, { ...e, feelings: e.feelings ?? [] });
-      store.replaceAll([...merged.values()]);
-      if (Array.isArray(parsed?.affirmations)) {
-        const lines = parsed.affirmations.filter((x: unknown): x is string => typeof x === "string");
-        affirmationStore.replaceAll([...new Set([...affirmationStore.custom(), ...lines])]);
-      }
-      setMsg(`Restored ${valid.length} entries.`);
+      const r = await restoreBackup(await file.text());
+      setMsg(`Restored ${r.restored} entries. Your journal now has ${r.total}.`);
     } catch {
       setMsg("That file didn’t look like a FutureJournal backup.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -101,14 +90,24 @@ export default function AboutPage() {
       <section className="space-y-3">
         <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted">Your data</h2>
         <p className="px-1 text-sm text-muted">
-          Entries stay on this device, in this browser. Your journal is never uploaded. The one
-          exception is the Speak button: while it’s on, your browser’s own speech service (Google’s,
-          in Chrome) turns what you say into text. Download a backup now and then, especially before
-          clearing your browser.
+          {inApp ? (
+            <>
+              Entries stay on this phone, in the app’s own storage. Your journal is never uploaded. Save a
+              backup now and then, and before you change phones. Restore takes a backup from the website or
+              from this app.
+            </>
+          ) : (
+            <>
+              Entries stay on this device, in this browser. Your journal is never uploaded. The one
+              exception is the Speak button: while it’s on, your browser’s own speech service (Google’s,
+              in Chrome) turns what you say into text. Download a backup now and then, especially before
+              clearing your browser.
+            </>
+          )}
         </p>
         <div className="flex gap-2">
           <button onClick={exportJson} className="flex-1 rounded-xl bg-ink py-3 text-sm font-semibold text-paper">
-            Download backup
+            {inApp ? "Save backup" : "Download backup"}
           </button>
           <button onClick={() => fileRef.current?.click()} className="flex-1 rounded-xl border border-line bg-card py-3 text-sm font-semibold text-ink">
             Restore backup
@@ -116,17 +115,26 @@ export default function AboutPage() {
           <input
             ref={fileRef}
             type="file"
-            accept="application/json,.json"
+            accept={inApp ? undefined : "application/json,.json"}
             className="hidden"
             onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])}
           />
         </div>
         {msg && <p className="px-1 text-sm text-plum">{msg}</p>}
+        {!inApp && (
+          <p className="px-1 text-sm text-muted">
+            To add it to your home screen, open your browser menu and choose <strong>Install app</strong> or{" "}
+            <strong>Add to Home screen</strong>.
+          </p>
+        )}
         <p className="px-1 text-sm text-muted">
-          To add it to your home screen, open your browser menu and choose <strong>Install app</strong> or{" "}
-          <strong>Add to Home screen</strong>.
+          <Link href="/privacy/" className="font-semibold text-plum underline">
+            Privacy policy
+          </Link>
         </p>
       </section>
+
+      {inApp && <AppSettings />}
     </div>
   );
 }

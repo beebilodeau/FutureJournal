@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { store } from "./store";
 import { maybeSeedDemo } from "./demo";
+import { kv } from "./kv";
 import type { Entry } from "./types";
 
 /** Live list of entries; re-reads when any tab or component saves. */
@@ -16,14 +17,20 @@ export function useEntries(): { entries: Entry[]; ready: boolean } {
   }, []);
 
   useEffect(() => {
-    maybeSeedDemo();
-    load();
+    let live = true;
+    // In the apps, entries load from the phone's storage first.
+    kv.ready.then(() => {
+      if (!live) return;
+      maybeSeedDemo();
+      load();
+    });
     const onStorage = (e: StorageEvent) => {
       if (!e.key || e.key.startsWith("futurejournal")) load();
     };
     window.addEventListener("futurejournal:change", load);
     window.addEventListener("storage", onStorage);
     return () => {
+      live = false;
       window.removeEventListener("futurejournal:change", load);
       window.removeEventListener("storage", onStorage);
     };

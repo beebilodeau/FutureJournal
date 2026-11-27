@@ -1,4 +1,5 @@
 import type { Entry } from "./types";
+import { kv } from "./kv";
 
 /**
  * Storage boundary. Everything in the UI talks to `JournalStore`, so moving
@@ -18,7 +19,7 @@ const KEY = "futurejournal.entries.v1";
 function read(): Record<string, Entry> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = kv.get(KEY);
     return raw ? (JSON.parse(raw) as Record<string, Entry>) : {};
   } catch {
     return {};
@@ -27,13 +28,14 @@ function read(): Record<string, Entry> {
 
 function write(map: Record<string, Entry>) {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(map));
+    kv.set(KEY, JSON.stringify(map));
     window.dispatchEvent(new Event("futurejournal:change"));
   } catch {
     // Storage full or blocked (private mode). The UI keeps working in memory.
   }
 }
 
+/** Entries on this device: browser storage on the website, app storage in the apps. */
 export const localStore: JournalStore = {
   all() {
     return Object.values(read()).sort((a, b) => b.date.localeCompare(a.date));

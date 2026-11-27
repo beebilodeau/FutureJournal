@@ -1,24 +1,39 @@
 {
   "name": "futurejournal",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "app:sync": "next build && cap sync",
+    "app:android": "next build && cap sync android && cap open android",
+    "app:ios": "next build && cap sync ios && cap open ios",
+    "test": "tsx scripts/test-storage.ts"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "10.0.0",
+    "@capacitor/android": "8.6.3",
+    "@capacitor/app": "8.1.0",
+    "@capacitor/core": "8.6.3",
+    "@capacitor/filesystem": "8.1.6",
+    "@capacitor/ios": "8.6.3",
+    "@capacitor/local-notifications": "8.3.1",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/share": "8.0.3",
     "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.3",
     "@tailwindcss/postcss": "4.3.5",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "4.3.5",
+    "tsx": "4.23.15",
     "typescript": "^5"
   }
 }

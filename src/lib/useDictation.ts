@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isNativeApp } from "./kv";
 
 // Minimal types for the Web Speech API (Chrome ships it as webkitSpeechRecognition).
 interface SpeechAlt {
@@ -29,6 +30,10 @@ type RecognizerCtor = new () => Recognizer;
 
 function getCtor(): RecognizerCtor | null {
   if (typeof window === "undefined") return null;
+  // Android's app web view exposes the object but can't reach a speech
+  // service, so the button stays hidden in the apps (the phone keyboard's mic
+  // works there instead).
+  if (isNativeApp()) return null;
   const w = window as unknown as { SpeechRecognition?: RecognizerCtor; webkitSpeechRecognition?: RecognizerCtor };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }

@@ -1,6 +1,7 @@
 import { addDays } from "./dates";
 import type { Entry } from "./types";
 import { splitSentences } from "./parts";
+import { kv } from "./kv";
 
 /**
  * Daily affirmation: one line at the top of the Write screen.
@@ -59,7 +60,7 @@ interface Saved {
 function read(): Saved {
   if (typeof window === "undefined") return { custom: [] };
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = kv.get(KEY);
     const parsed = raw ? (JSON.parse(raw) as Saved) : null;
     return { custom: Array.isArray(parsed?.custom) ? parsed!.custom.filter((s) => typeof s === "string") : [] };
   } catch {
@@ -69,7 +70,7 @@ function read(): Saved {
 
 function write(data: Saved) {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(data));
+    kv.set(KEY, JSON.stringify(data));
     window.dispatchEvent(new Event("futurejournal:change"));
   } catch {
     // Storage blocked; keep going in memory.
