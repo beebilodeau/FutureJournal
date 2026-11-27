@@ -10,7 +10,7 @@ import { kv } from "./kv";
  *      day you wrote last night (or the last few entries), turned into the
  *      present tense.
  *   2. "Yours": lines you added yourself (kept on this device).
- *   3. A built-in set.
+ *   3. Two built-in sets, Everyday and Abundance (you choose one or both).
  */
 
 export const BUILT_IN: string[] = [
@@ -44,33 +44,84 @@ export const BUILT_IN: string[] = [
   "Today is already a good day. I wrote it that way.",
 ];
 
+/** The second built-in set: 21 abundance lines, added Nov 2026. */
+export const ABUNDANCE: string[] = [
+  "I am abundant, and I attract everything I desire into my life.",
+  "I am a magnet for money and opportunities.",
+  "All good things come into my life effortlessly.",
+  "I am surrounded by love, peace, and happiness.",
+  "Money comes to me in both expected and unexpected ways.",
+  "I deserve all the wonderful things life has to offer.",
+  "Every day, my life is filled with new blessings.",
+  "I am a lucky person, and everything works in my favor.",
+  "My mind is filled with thoughts of wealth and prosperity.",
+  "I attract wonderful people who add value to my life.",
+  "Everything I touch flourishes, grows, and prospers.",
+  "My life is filled with endless opportunities.",
+  "I am worthy of receiving love, success, and abundance.",
+  "The universe always works in my favor.",
+  "Every day, I receive more than I ever imagined possible.",
+  "My heart is filled with gratitude, and my life is full of blessings.",
+  "I am capable of achieving everything I set my mind to.",
+  "Wealth, health, and love are part of my life.",
+  "I am in the right place, at the perfect time.",
+  "The best things in my life are yet to come.",
+  "I am grateful for everything I already have and everything that is yet to come.",
+];
+
+export type SetId = "everyday" | "abundance";
+export type SetChoice = "all" | SetId;
+
+export const SETS: { id: SetId; name: string; lines: string[] }[] = [
+  { id: "everyday", name: "Everyday", lines: BUILT_IN },
+  { id: "abundance", name: "Abundance", lines: ABUNDANCE },
+];
+
+export const SET_CHOICES: { id: SetChoice; name: string }[] = [
+  { id: "all", name: "Both sets" },
+  ...SETS.map(({ id, name }) => ({ id, name })),
+];
+
 export type AffirmationSource = "words" | "custom" | "built-in";
 
 export interface Affirmation {
   text: string;
   source: AffirmationSource;
+  /** Which built-in set a built-in line comes from. */
+  set?: SetId;
 }
 
 const KEY = "futurejournal.affirmations.v1";
 
 interface Saved {
   custom: string[];
+  /** Which built-in lines to show; both when missing. */
+  set?: SetChoice;
+}
+
+function isChoice(x: unknown): x is SetChoice {
+  return x === "all" || SETS.some((s) => s.id === x);
 }
 
 function read(): Saved {
-  if (typeof window === "undefined") return { custom: [] };
+  if (typeof window === "undefined") return { custom: [], set: "all" };
   try {
     const raw = kv.get(KEY);
     const parsed = raw ? (JSON.parse(raw) as Saved) : null;
-    return { custom: Array.isArray(parsed?.custom) ? parsed!.custom.filter((s) => typeof s === "string") : [] };
+    return {
+      custom: Array.isArray(parsed?.custom) ? parsed!.custom.filter((s) => typeof s === "string") : [],
+      set: isChoice(parsed?.set) ? parsed!.set : "all",
+    };
   } catch {
-    return { custom: [] };
+    return { custom: [], set: "all" };
   }
 }
 
 function write(data: Saved) {
   try {
-    kv.set(KEY, JSON.stringify(data));
+    // "Both sets" is the default, so it isn't stored: saved data keeps its old shape.
+    const saved: Saved = data.set && data.set !== "all" ? data : { custom: data.custom };
+    kv.set(KEY, JSON.stringify(saved));
     window.dispatchEvent(new Event("futurejournal:change"));
   } catch {
     // Storage blocked; keep going in memory.
@@ -90,10 +141,17 @@ export const affirmationStore = {
   },
   remove(line: string) {
     const data = read();
-    write({ custom: data.custom.filter((x) => x !== line) });
+    write({ ...data, custom: data.custom.filter((x) => x !== line) });
   },
   replaceAll(lines: string[]) {
-    write({ custom: lines.map(tidy).filter(Boolean) });
+    write({ ...read(), custom: lines.map(tidy).filter(Boolean) });
+  },
+  setChoice(): SetChoice {
+    return read().set ?? "all";
+  },
+  chooseSet(choice: SetChoice) {
+    if (!isChoice(choice)) return;
+    write({ ...read(), set: choice });
   },
 };
 
@@ -159,17 +217,33 @@ export function fromWords(entries: Entry[], today: string): string[] {
  * The first line is today's pick: your own words when there are some, else a
  * line chosen by the date so it stays the same all day.
  */
-export function affirmationsFor(entries: Entry[], custom: string[], today: string): Affirmation[] {
+export function affirmationsFor(
+  entries: Entry[],
+  custom: string[],
+  today: string,
+  choice: SetChoice = "all",
+): Affirmation[] {
   const words = fromWords(entries, today).map((text) => ({ text, source: "words" as const }));
   const rest: Affirmation[] = [
     ...custom.map((text) => ({ text, source: "custom" as const })),
-    ...BUILT_IN.map((text) => ({ text, source: "built-in" as const })),
+    ...builtIns(choice),
   ];
   // Rotate the rest by the date so each day starts somewhere new.
   const offset = rest.length ? hash(today) % rest.length : 0;
   const rotated = [...rest.slice(offset), ...rest.slice(0, offset)];
   const seen = new Set<string>();
   return [...words, ...rotated].filter((a) => (seen.has(a.text) ? false : (seen.add(a.text), true)));
+}
+
+/** Built-in lines for the chosen set; with both, the two sets take turns. */
+function builtIns(choice: SetChoice): Affirmation[] {
+  const sets = SETS.filter((s) => choice === "all" || s.id === choice).map((s) =>
+    s.lines.map((text) => ({ text, source: "built-in" as const, set: s.id })),
+  );
+  const out: Affirmation[] = [];
+  const longest = Math.max(0, ...sets.map((l) => l.length));
+  for (let i = 0; i < longest; i++) for (const lines of sets) if (lines[i]) out.push(lines[i]);
+  return out;
 }
 
 function hash(s: string): number {
