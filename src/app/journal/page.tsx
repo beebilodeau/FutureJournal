@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 import { useEntries, useNow, useScrollToHash } from "@/lib/useJournal";
 import { addDays, formatLong, formatShort, fromKey, todayKey } from "@/lib/dates";
-import { outcomeCounts, streak } from "@/lib/stats";
+import { bestStreak, outcomeCounts, streak } from "@/lib/stats";
 import { store } from "@/lib/store";
 import { cameTrueRate } from "@/lib/parts";
 import type { Entry } from "@/lib/types";
 import { EntryEditor } from "@/components/EntryEditor";
 import { ReflectCard, outcomeLabel } from "@/components/ReflectCard";
+import { MonthCalendar } from "@/components/MonthCalendar";
 
 export default function JournalPage() {
   const now = useNow();
@@ -18,6 +19,7 @@ export default function JournalPage() {
   const [open, setOpen] = useState<string | null>(null);
 
   const counts = outcomeCounts(entries);
+  const best = bestStreak(entries);
   const rate = cameTrueRate(entries.filter((e) => e.date <= today));
   const weekAgo = addDays(today, -6);
   const week = cameTrueRate(entries.filter((e) => e.date >= weekAgo && e.date <= today));
@@ -31,7 +33,7 @@ export default function JournalPage() {
       </header>
 
       <div className="grid grid-cols-3 gap-2">
-        <Stat label="Day streak" value={streak(entries, today)} />
+        <Stat label="Day streak" value={streak(entries, today)} sub={best > 0 ? `best ${best}` : undefined} />
         <Stat label="Days written" value={entries.filter((e) => e.text.trim()).length} />
         <Stat label="Came true" value={counts.happened} sub={counts.partly ? `+${counts.partly} partly` : undefined} />
       </div>
@@ -53,6 +55,17 @@ export default function JournalPage() {
         </section>
       )}
 
+      {ready && entries.length > 0 && (
+        <MonthCalendar
+          entries={entries}
+          today={today}
+          onPick={(d) => {
+            setOpen(d);
+            window.setTimeout(() => document.getElementById(`entry-${d}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+          }}
+        />
+      )}
+
       {ready && entries.length === 0 && (
         <p className="rounded-3xl border border-dashed border-line p-6 text-center text-muted">
           Nothing here yet. Your first entry is tomorrow’s story.
@@ -64,7 +77,7 @@ export default function JournalPage() {
           <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted">{month}</h2>
           <ul className="space-y-2">
             {list.map((e) => (
-              <li key={e.date}>
+              <li key={e.date} id={`entry-${e.date}`} className="scroll-mt-4">
                 <EntryRow
                   entry={e}
                   today={today}

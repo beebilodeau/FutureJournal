@@ -113,6 +113,18 @@ const OPENERS: [RegExp, string][] = [
   [/^I feel\b/i, "I feel"],
 ];
 
+// Where a sentence turns into a story about one day, we stop: "I was calm on
+// the 2 PM call" becomes "I am calm."
+const CUT = /,|;|:|\s[-–—]\s|\s(?:on|at|in|with|that|when|while|during|after|before|because|since|until|so|but|and (?:they|she|he|we|it|then|I))\s/i;
+
+// "-ed" words that still read well in the present ("I am focused").
+const ED_OK = new Set([
+  "focused", "energized", "rested", "relaxed", "centered", "grounded", "prepared",
+  "motivated", "inspired", "determined", "organized", "balanced", "connected",
+  "loved", "blessed", "excited", "supported", "appreciated", "valued", "respected",
+  "refreshed", "recharged", "committed", "talented", "gifted", "aligned",
+]);
+
 /** "I am / I was / I felt …" sentences from recent entries, as present-tense lines. */
 export function fromWords(entries: Entry[], today: string): string[] {
   const days = new Set([today, addDays(today, -1), addDays(today, -2), addDays(today, -3)]);
@@ -125,9 +137,16 @@ export function fromWords(entries: Entry[], today: string): string[] {
     for (const sentence of splitSentences(e.text)) {
       const opener = OPENERS.find(([re]) => re.test(sentence));
       if (!opener) continue;
-      const words = sentence.split(/\s+/).length;
-      if (words < 3 || words > 18) continue;
-      const line = tidy(sentence.replace(opener[0], opener[1]));
+      let rest = sentence.replace(opener[0], "").replace(/[.!?]+$/, "");
+      const cut = rest.search(CUT);
+      if (cut >= 0) rest = rest.slice(0, cut);
+      const words = rest.trim().split(/\s+/).filter(Boolean);
+      if (words.length < 1 || words.length > 10) continue;
+      if (words.some((w) => /\d/.test(w))) continue;
+      if (words.some((w) => /ed$/i.test(w) && !ED_OK.has(w.toLowerCase()))) continue;
+      // "I was able to …", "I felt like …": not an affirmation on their own.
+      if (/^(?:able|like|that|so|going|about|there|here|the|a|an)$/i.test(words[0])) continue;
+      const line = tidy(`${opener[1]} ${words.join(" ")}`);
       if (!out.includes(line)) out.push(line);
     }
   }

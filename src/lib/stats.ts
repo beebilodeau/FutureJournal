@@ -25,3 +25,17 @@ export function outcomeCounts(entries: Entry[]) {
   }
   return c;
 }
+
+/** Longest run of consecutive days written, ever. */
+export function bestStreak(entries: Entry[]): number {
+  const dates = [...new Set(entries.filter((e) => e.text.trim()).map((e) => e.date))].sort();
+  let best = 0;
+  let run = 0;
+  let prev: string | null = null;
+  for (const d of dates) {
+    run = prev && addDays(prev, 1) === d ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = d;
+  }
+  return best;
+}
