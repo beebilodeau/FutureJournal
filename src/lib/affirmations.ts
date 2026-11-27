@@ -1,5 +1,6 @@
 import { addDays } from "./dates";
 import type { Entry } from "./types";
+import { splitSentences } from "./parts";
 
 /**
  * Daily affirmation: one line at the top of the Write screen.
@@ -131,13 +132,6 @@ export function fromWords(entries: Entry[], today: string): string[] {
     }
   }
   return out;
-}
-
-export function splitSentences(text: string): string[] {
-  return text
-    .split(/(?<=[.!?])\s+|\n+/)
-    .map((s) => s.trim())
-    .filter((s) => s.replace(/[^\p{L}\p{N}]/gu, "").length > 0);
 }
 
 /**

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useEntries, useNow, useScrollToHash } from "@/lib/useJournal";
 import { formatLong, partOfDay, todayKey, tomorrowKey } from "@/lib/dates";
 import { streak } from "@/lib/stats";
@@ -20,6 +20,11 @@ export default function Home() {
   const count = streak(entries, today);
   const firstTime = ready && entries.length === 0;
   const [reflectEarly, setReflectEarly] = useState(false);
+
+  // A link to #came-true opens the check-off right away, any time of day.
+  useEffect(() => {
+    if (window.location.hash === "#came-true") setReflectEarly(true);
+  }, []);
 
   const greeting =
     part === "morning" ? "Good morning" : part === "day" ? "Good afternoon" : "Good evening";

@@ -1,5 +1,6 @@
 import { addDays, todayKey } from "./dates";
 import { store } from "./store";
+import { splitSentences } from "./parts";
 import type { Entry, Outcome } from "./types";
 
 /**
@@ -81,7 +82,9 @@ export function maybeSeedDemo(): boolean {
       feelings: s.feelings,
       createdAt: now,
       updatedAt: now,
-      reflection: s.outcome ? { outcome: s.outcome, note: "", at: now } : undefined,
+      reflection: s.outcome
+        ? { outcome: s.outcome, note: "", at: now, checks: sampleChecks(s.text, s.outcome) }
+        : undefined,
     });
   });
   // An older run with a gap, so the calendar has some shape.
@@ -97,4 +100,10 @@ export function maybeSeedDemo(): boolean {
   }
   store.replaceAll(entries);
   return true;
+}
+
+function sampleChecks(text: string, outcome: Outcome) {
+  const parts = splitSentences(text);
+  const doneUpTo = outcome === "happened" ? parts.length : outcome === "partly" ? Math.ceil(parts.length / 2) : 0;
+  return parts.map((t, i) => ({ text: t, done: i < doneUpTo }));
 }
