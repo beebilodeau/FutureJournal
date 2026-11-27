@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useEntries, useNow } from "@/lib/useJournal";
+import { useEntries, useNow, useScrollToHash } from "@/lib/useJournal";
 import { formatLong, formatShort, fromKey, todayKey } from "@/lib/dates";
 import { outcomeCounts, streak } from "@/lib/stats";
 import { store } from "@/lib/store";
@@ -12,6 +12,7 @@ import { ReflectCard, outcomeLabel } from "@/components/ReflectCard";
 export default function JournalPage() {
   const now = useNow();
   const { entries, ready } = useEntries();
+  useScrollToHash(ready);
   const today = todayKey(now);
   const [open, setOpen] = useState<string | null>(null);
 

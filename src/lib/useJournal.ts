@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { store } from "./store";
+import { maybeSeedDemo } from "./demo";
 import type { Entry } from "./types";
 
 /** Live list of entries; re-reads when any tab or component saves. */
@@ -15,6 +16,7 @@ export function useEntries(): { entries: Entry[]; ready: boolean } {
   }, []);
 
   useEffect(() => {
+    maybeSeedDemo();
     load();
     const onStorage = (e: StorageEvent) => {
       if (!e.key || e.key.startsWith("futurejournal")) load();
@@ -43,4 +45,16 @@ export function useNow(): Date {
     };
   }, []);
   return now;
+}
+
+/** Once the page has content, scroll to the #section named in the address. */
+export function useScrollToHash(ready: boolean) {
+  useEffect(() => {
+    if (!ready || !window.location.hash) return;
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    const t = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+    return () => window.clearTimeout(t);
+  }, [ready]);
 }

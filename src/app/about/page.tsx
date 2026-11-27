@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { isEntry, store } from "@/lib/store";
+import { affirmationStore } from "@/lib/affirmations";
 import { toKey } from "@/lib/dates";
 
 const STEPS = [
@@ -31,7 +32,11 @@ export default function AboutPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   function exportJson() {
-    const data = JSON.stringify({ app: "futurejournal", version: 1, entries: store.all() }, null, 2);
+    const data = JSON.stringify(
+      { app: "futurejournal", version: 1, entries: store.all(), affirmations: affirmationStore.custom() },
+      null,
+      2,
+    );
     const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
     const a = document.createElement("a");
     a.href = url;
@@ -50,6 +55,10 @@ export default function AboutPage() {
       const merged = new Map(store.all().map((e) => [e.date, e]));
       for (const e of valid) merged.set(e.date, { ...e, feelings: e.feelings ?? [] });
       store.replaceAll([...merged.values()]);
+      if (Array.isArray(parsed?.affirmations)) {
+        const lines = parsed.affirmations.filter((x: unknown): x is string => typeof x === "string");
+        affirmationStore.replaceAll([...new Set([...affirmationStore.custom(), ...lines])]);
+      }
       setMsg(`Restored ${valid.length} entries.`);
     } catch {
       setMsg("That file didn’t look like a FutureJournal backup.");

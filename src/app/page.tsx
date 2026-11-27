@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useEntries, useNow } from "@/lib/useJournal";
+import { useEntries, useNow, useScrollToHash } from "@/lib/useJournal";
 import { formatLong, partOfDay, todayKey, tomorrowKey } from "@/lib/dates";
 import { streak } from "@/lib/stats";
 import { EntryEditor } from "@/components/EntryEditor";
 import { ReflectCard } from "@/components/ReflectCard";
 import { StreakPill } from "@/components/StreakPill";
+import { AffirmationCard } from "@/components/AffirmationCard";
 
 export default function Home() {
   const now = useNow();
   const { entries, ready } = useEntries();
+  useScrollToHash(ready);
   const today = todayKey(now);
   const tomorrow = tomorrowKey(now);
   const part = partOfDay(now);
@@ -66,6 +68,8 @@ export default function Home() {
         </div>
         {ready && count > 0 && <StreakPill count={count} />}
       </header>
+
+      {ready && <AffirmationCard entries={entries} today={today} />}
 
       {firstTime && (
         <div className="rounded-3xl bg-dawn-soft p-5 text-ink">
