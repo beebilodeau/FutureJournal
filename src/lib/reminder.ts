@@ -74,6 +74,10 @@ export async function applyReminder(next: ReminderSettings): Promise<ReminderRes
         smallIcon: "ic_stat_futurejournal",
         iconColor: "#5f4b8b",
         schedule: { on: { hour: next.hour, minute: next.minute }, allowWhileIdle: true },
+        // A nudge can land a few minutes late, so skip Android's "Alarms &
+        // reminders" permission (the app doesn't request it, so the switch
+        // there is greyed out) and schedule it as a normal alarm.
+        isExactNotification: false,
       },
     ],
   });
