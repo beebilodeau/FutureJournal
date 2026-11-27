@@ -92,7 +92,9 @@ export default function AboutPage() {
         <p className="px-1 text-sm text-muted">
           {inApp ? (
             <>
-              Entries stay on this phone, in the app’s own storage. Your journal is never uploaded. Save a
+              Entries stay on this phone, in the app’s own storage. Your journal is never uploaded. The one
+              exception is the Speak button: while it’s on, your phone’s own speech recognition (Google’s, on
+              most Android phones) turns what you say into text. Save a
               backup now and then, and before you change phones. Restore takes a backup from the website or
               from this app.
             </>

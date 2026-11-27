@@ -55,14 +55,16 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     ),
   },
   {
-    title: "The Speak button (website)",
+    title: "The Speak button",
     body: (
       <>
         On the website, the Speak button uses your browser’s built-in speech recognition. While it is
         on, your browser sends what you say to its own speech service (in Chrome, that’s Google’s) to
-        turn it into text, under that company’s privacy terms. It’s off unless you tap it. The apps
-        don’t include this button; your phone keyboard’s own microphone works there instead, under
-        your keyboard maker’s terms.
+        turn it into text, under that company’s privacy terms. In the apps, the Speak button uses
+        your phone’s built-in speech recognition instead (Google’s on most Android phones, Apple’s on
+        iPhone), which may send what you say to that company’s service to turn it into text, under its
+        privacy terms. The app asks for microphone permission the first time you tap Speak. Either
+        way, it’s off unless you tap it, and only the text it gives back is saved, on your device.
       </>
     ),
   },

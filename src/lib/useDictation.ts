@@ -31,12 +31,26 @@ type RecognizerCtor = new () => Recognizer;
 function getCtor(): RecognizerCtor | null {
   if (typeof window === "undefined") return null;
   // Android's app web view exposes the object but can't reach a speech
-  // service, so the button stays hidden in the apps (the phone keyboard's mic
-  // works there instead).
+  // service, so the apps use the phone's own recognizer instead (see native*).
   if (isNativeApp()) return null;
   const w = window as unknown as { SpeechRecognition?: RecognizerCtor; webkitSpeechRecognition?: RecognizerCtor };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
+
+// --- the apps: the phone's own speech recognition --------------------------
+async function nativeSR() {
+  return (await import("@capacitor-community/speech-recognition")).SpeechRecognition;
+}
+
+async function nativeAvailable(): Promise<boolean> {
+  try {
+    return (await (await nativeSR()).available()).available;
+  } catch {
+    return false;
+  }
+}
+
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export type DictationState = "idle" | "listening" | "blocked" | "error";
 
@@ -56,7 +70,67 @@ export function useDictation(onPhrase: (text: string) => void) {
   const onPhraseRef = useRef(onPhrase);
   onPhraseRef.current = onPhrase;
 
-  useEffect(() => setSupported(getCtor() !== null), []);
+  useEffect(() => {
+    if (isNativeApp()) {
+      let live = true;
+      nativeAvailable().then((ok) => live && setSupported(ok));
+      return () => {
+        live = false;
+      };
+    }
+    setSupported(getCtor() !== null);
+  }, []);
+
+  // In the apps: ask for the microphone once, then listen one phrase at a time
+  // until Stop or about 3 silent rounds in a row.
+  const nativeRun = useCallback(async () => {
+    const SR = await nativeSR();
+    try {
+      let perm = await SR.checkPermissions();
+      if (perm.speechRecognition !== "granted") perm = await SR.requestPermissions();
+      if (perm.speechRecognition !== "granted") {
+        wanted.current = false;
+        setState("blocked");
+        return;
+      }
+    } catch {
+      wanted.current = false;
+      setState("error");
+      return;
+    }
+    setState("listening");
+    let quiet = 0;
+    while (wanted.current && quiet < 3) {
+      try {
+        const r = await SR.start({
+          language: navigator.language || "en-US",
+          maxResults: 1,
+          partialResults: false,
+          popup: false,
+        });
+        const t = r.matches?.[0]?.trim();
+        if (t) {
+          quiet = 0;
+          onPhraseRef.current(t);
+        } else {
+          quiet++;
+        }
+      } catch (err) {
+        const msg = String((err as Error)?.message ?? err);
+        if (/permission/i.test(msg)) {
+          wanted.current = false;
+          setState("blocked");
+          return;
+        }
+        // "No match" / "No speech input" end a silent round; anything else
+        // (busy, network) also counts toward giving up.
+        quiet++;
+        await pause(250);
+      }
+    }
+    wanted.current = false;
+    setState((s) => (s === "listening" ? "idle" : s));
+  }, []);
 
   const startOnce = useCallback(() => {
     const Ctor = getCtor();
@@ -119,20 +193,32 @@ export function useDictation(onPhrase: (text: string) => void) {
   }, []);
 
   const start = useCallback(() => {
+    if (isNativeApp()) {
+      if (wanted.current) return;
+      wanted.current = true;
+      void nativeRun();
+      return;
+    }
     if (rec.current) return;
     wanted.current = true;
     quietEnds.current = 0;
     startOnce();
-  }, [startOnce]);
+  }, [startOnce, nativeRun]);
 
   const stop = useCallback(() => {
     wanted.current = false;
+    if (isNativeApp()) {
+      setState((s) => (s === "listening" ? "idle" : s));
+      void nativeSR().then((SR) => SR.stop().catch(() => {}));
+      return;
+    }
     rec.current?.stop();
   }, []);
 
   useEffect(() => () => {
     wanted.current = false;
-    rec.current?.abort();
+    if (isNativeApp()) void nativeSR().then((SR) => SR.stop().catch(() => {}));
+    else rec.current?.abort();
   }, []);
 
   return { supported, state, interim, start, stop };

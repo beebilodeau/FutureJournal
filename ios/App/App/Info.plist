@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Use the microphone when you tap Speak to dictate an entry.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Turn what you say into text when you tap Speak.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Use Face ID to unlock your journal.</string>
   <key>CAPACITOR_DEBUG</key>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { store } from "@/lib/store";
-import { kv } from "@/lib/kv";
+import { isNativeApp, kv } from "@/lib/kv";
 import { tenseHints } from "@/lib/tense";
 import { FEELINGS, SPARKS } from "@/lib/prompts";
 import { formatPhrase, useDictation } from "@/lib/useDictation";
@@ -167,7 +167,9 @@ export function EntryEditor({
         </div>
         {voice.state === "blocked" && (
           <p className="mt-2 text-xs text-muted">
-            The microphone is blocked for this site. Allow it in your browser’s site settings, then tap Speak again.
+            {isNativeApp()
+              ? "FutureJournal doesn’t have microphone permission. Turn it on in your phone’s Settings > Apps > FutureJournal > Permissions, then tap Speak again."
+              : "The microphone is blocked for this site. Allow it in your browser’s site settings, then tap Speak again."}
           </p>
         )}
         {voice.state === "error" && (
